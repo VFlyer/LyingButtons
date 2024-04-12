@@ -1,0 +1,10 @@
+{
+  "name": "lyingButtons-Editor",
+  "references": [
+    "lyingButtons"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": []
+}
