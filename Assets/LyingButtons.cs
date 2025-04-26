@@ -256,8 +256,8 @@ public class LyingButtons : MonoBehaviour {
 			yield return "sendtochaterror The module is no longer accepting any more inputs.";
 			yield break;
 		}
-		var rgxToggleCmd = Regex.Match(command, string.Format(@"^\s*TOGGLE(\s({0})\s[12345OXB])+\s*$", allowedBtnPos.Join("|")), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-		var rgxPressCmd = Regex.Match(command, string.Format(@"^\s*PRESS(\s({0}))+\s*$", allowedBtnPos.Join("|")), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+		var rgxToggleCmd = Regex.Match(command, string.Format(@"^\s*T(OGGLE)?(\s({0})\s[12345OXB])+\s*$", allowedBtnPos.Join("|")), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+		var rgxPressCmd = Regex.Match(command, string.Format(@"^\s*P(RESS)?(\s({0}))+\s*$", allowedBtnPos.Join("|")), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 		var rgxColorblindCmd = Regex.Match(command, @"^colou?rblind$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 		if (rgxColorblindCmd.Success)
         {
