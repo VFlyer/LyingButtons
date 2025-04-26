@@ -298,7 +298,7 @@ public class LyingButtons : MonoBehaviour {
 			}
         }
 		else
-			yield return "sendtochat An error occured because {0} inputted something wrong. Check the command again for any typos.";
+			yield return "sendtochat An error occurred because {0} inputted something wrong. Check the command again for any typos.";
 	}
 	/*
 	private int posToNum(string str)
