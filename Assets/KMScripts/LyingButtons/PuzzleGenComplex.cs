@@ -5,13 +5,17 @@ using UnityEngine;
 
 public class PuzzleGenComplex
 {
-    private int NUM_TOTAL_RETRIES = 1000;
+    private readonly int NUM_TOTAL_RETRIES = 1000;
     private List<ClueObj> allTrueClues = new List<ClueObj>(), allFalseClues = new List<ClueObj>();
+    private ButtonComplex[] storedButtons;
+    private int[] possibleLiarsStored;
     private bool solutionUnique = false;
     public bool IsSolutionUnique => solutionUnique;
     public ButtonComplex[] generatePuzzle(ButtonComplex[] buttons, List<int> possNumLiars, int numColors)
     {
         List<ClueObj> allPossibleClues = getAllPossibleClueIds(buttons, possNumLiars, numColors);
+        storedButtons = buttons;
+        possibleLiarsStored = possNumLiars.ToArray();
         //Debug.LogFormat("Number of clues: {0}", allPossibleClues.Count);
         ClueTester clueTester = new ClueTester();
         foreach (ClueObj clue in allPossibleClues)
@@ -247,6 +251,37 @@ public class PuzzleGenComplex
                 solCount++;
         }
         return solCount == 1;
+    }
+    public List<bool[]> GetAllPossiblePositions()
+    {
+        var clueTester = new ClueTester();
+        ButtonComplex[] buttons = Copy(storedButtons);
+        var possibleBtnColors = buttons.Select(a => a.buttonColor).Distinct().ToArray();
+        var buttonsTotal = storedButtons.Length;
+        var possibleIdxUnsafePos = Enumerable.Range(0, 1 << buttonsTotal).Where(a => possibleLiarsStored.Contains(count1s(a))).ToArray();
+        var output = new List<bool[]>();
+        for (var x = 0; x < possibleIdxUnsafePos.Count(); x++)
+        {
+            // Reset this so that the conditions are followed later.
+            foreach (var btn in buttons)
+                btn.isTruth = btn.isSafe;
+            // Default rule: a button that is safe is telling the truth.
+            var curIdxLying = possibleIdxUnsafePos[x];
+            var arraySafeBtns = Enumerable.Range(0, buttonsTotal).Select(a => (curIdxLying >> a) % 2 == 0).ToArray();
+            for (var n = 0; n < buttonsTotal; n++)
+                buttons[n].isSafe = arraySafeBtns[n];
+            foreach (var curBtnColor in possibleBtnColors)
+            {
+                var sharedbuttonIdxesClr = Enumerable.Range(0, buttonsTotal).Where(a => buttons[a].buttonColor == curBtnColor).ToArray();
+                if (sharedbuttonIdxesClr.Any(a => !buttons[a].isSafe))
+                    foreach (var idx in sharedbuttonIdxesClr)
+                        buttons[idx].isTruth ^= true;
+            }
+            var solutionValid = buttons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth);
+            if (solutionValid)
+                output.Add(arraySafeBtns);
+        }
+        return output;
     }
     private int count1s(int num)
     {
