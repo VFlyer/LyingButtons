@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-public class LyingButtons : MonoBehaviour {
+public class DoubtLyingButtons : MonoBehaviour {
 
 	public KMBombModule module;
 	public KMAudio Audio;
@@ -14,6 +14,7 @@ public class LyingButtons : MonoBehaviour {
 
 	public KMSelectable[] toggleButtons;
 	public KMSelectable[] buttonSelectables;
+	public KMSelectable mainSelectable;
 
 	public MeshRenderer[] screens;
 	public MeshRenderer[] buttonMeshes;
@@ -31,10 +32,10 @@ public class LyingButtons : MonoBehaviour {
 
 	private int NUM_ROWS = 3;
 	private int NUM_COLS = 3;
-	private int MIN_LIARS = 1;
-	private int MAX_LIARS = 4;
+	private int MIN_UNSAFE = 2;
+	private int MAX_UNSAFE = 3;
 	private int MIN_CHOICE = 1;
-	private int MAX_CHOICE = 3;
+	private int MAX_CHOICE = 1;
 	private int NUM_COLORS = 3;
 
 	const string COLUMNS = "ABC";
@@ -50,12 +51,15 @@ public class LyingButtons : MonoBehaviour {
 
 	bool requireColorblind = false;
 	bool solving = false;
+	bool focused = false;
+	List<int> idxesHL = new List<int>();
 
 	private int numPressed;
 	private int[] toggleIndexes;
-	private readonly string toggleCycleChars = " 12345OX";
+	private readonly string toggleCycleChars = " 12345OX?";
 
-	private Button[] buttons;
+	private ButtonComplex[] buttons;
+	//private PuzzleGenComplex usedPuzzle;
 
 	private Dictionary<string, Material> clueMatDict = new Dictionary<string, Material>();
 
@@ -75,21 +79,23 @@ public class LyingButtons : MonoBehaviour {
 			//Debug.LogFormat("{0}", clueMat.name);
 			clueMatDict.Add(clueMat.name, clueMat);
 		}
+		//Debug.LogFormat("{0}", clueMatDict.Count);
 		toggleIndexes = new int[toggleTextMeshes.Length];
 		generatePossNumLiars();
-		Debug.Log($"[Lying Buttons #{moduleId}]: Possible number of liars: {string.Join(" ", possNumLiars.Select(x => x.ToString()).ToArray())}");
+		Debug.Log($"[Doubted Lying Buttons #{moduleId}]: {string.Join(" ", possNumLiars.Select(x => x.ToString()).ToArray())} unsafe buttons have been selected.");
 		for(int i = 0; i < clamps.Length; i++)
 		{
-			if (!possNumLiars.Contains(i + 1))
-				clamps[i].transform.localScale = new Vector3(0f, 0f, 0f);
+			clamps[i].enabled = possNumLiars.Contains(i + 1);
 		}
 		buttons = generatePuzzle();
 		HandleColorblindModeToggle(requireColorblind);
+		mainSelectable.OnFocus += delegate { focused = true; };
+		mainSelectable.OnDefocus += delegate { focused = false; };
 	}
 	private void generatePossNumLiars()
 	{
 		possNumLiars = new List<int>();
-		for (int i = MIN_LIARS; i <= MAX_LIARS; i++)
+		for (int i = MIN_UNSAFE; i <= MAX_UNSAFE; i++)
 			possNumLiars.Add(i);
 		int numChoices = Random.Range(0, MAX_CHOICE - MIN_CHOICE + 1) + MIN_CHOICE;
 		possNumLiars = possNumLiars.Shuffle();
@@ -103,18 +109,25 @@ public class LyingButtons : MonoBehaviour {
 		*/
 		possNumLiars.Sort();
 	}
-	private Button[] generatePuzzle()
+	private ButtonComplex[] generatePuzzle()
 	{
-		Button[] buttons = GenerateButtons();
-		buttons = new PuzzleGen().generatePuzzle(buttons, possNumLiars, NUM_COLORS);
+		ButtonComplex[] buttons = GenerateButtons();
+		var puzzleGenerator = new PuzzleGenComplex();
+		buttons = puzzleGenerator.generatePuzzle(buttons, possNumLiars, NUM_COLORS);
 		while (buttons == null)
 		{
 			buttons = GenerateButtons();
-			buttons = new PuzzleGen().generatePuzzle(buttons, possNumLiars, NUM_COLORS);
+			puzzleGenerator = new PuzzleGenComplex();
+			buttons = puzzleGenerator.generatePuzzle(buttons, possNumLiars, NUM_COLORS);
+		}
+		if (!puzzleGenerator.IsSolutionUnique)
+		{
+			Debug.Log($"[Doubted Lying Buttons #{moduleId}]: Watch out! The module has generated an ambiguous case!");
+			clamps.Last().enabled = true;
 		}
 		for (int i = 0; i < buttons.Length; i++)
 		{
-			Debug.Log($"[Lying Buttons #{moduleId}]: {buttons[i].toString()}");
+			Debug.Log($"[Doubted Lying Buttons #{moduleId}]: {buttons[i].toString()}");
 			screens[i].material = clueMatDict[buttons[i].clue.Code];
 			var btnColorIdx = (int)buttons[i].buttonColor;
 			buttonMeshes[i].material = buttonColors[btnColorIdx];
@@ -125,48 +138,70 @@ public class LyingButtons : MonoBehaviour {
 		foreach (int index in indexes)
 		{
 			toggleButtons[index].OnInteract = delegate { pressedToggle(index); return false; };
+			toggleButtons[index].OnHighlight = delegate { idxesHL.Add(index); };
+			toggleButtons[index].OnHighlightEnded = delegate { idxesHL.Remove(index); };
 			buttonSelectables[index].OnInteract = delegate { pressedButton(index); return false; };
 		}
 		return buttons;
 	}
-	private Button[] GenerateButtons()
+	private ButtonComplex[] GenerateButtons()
 	{
-		Button[] buttons = new Button[NUM_ROWS * NUM_COLS];
-		string liars = "";
-		for (int i = 0; i < buttons.Length; i++)
-			liars += i;
-		numLiars = possNumLiars[Random.Range(0, possNumLiars.Count)];
+		var totalButtons = NUM_ROWS * NUM_COLS;
+		ButtonComplex[] buttons = new ButtonComplex[totalButtons];
+		numLiars = possNumLiars.PickRandom();
 		//numLiars = 1;
-		liars = new string(liars.ToCharArray().Shuffle()).Substring(0, numLiars);
-		bool[] truth = { true, true, true, true, true, true, true, true, true };
-		foreach (char liar in liars)
-			truth[liar - '0'] = false;
+		var liars = Enumerable.Range(0, totalButtons).ToArray().Shuffle().Take(numLiars).ToArray();
+		bool[] truth = Enumerable.Repeat(true, totalButtons).ToArray();
+		bool[] isSafe = Enumerable.Repeat(true, totalButtons).ToArray();
+		int[] idxPickedColors = Enumerable.Range(0, totalButtons).Select(a => Random.Range(0, NUM_COLORS)).ToArray();
+		foreach (var liar in liars)
+		{
+			isSafe[liar] = false;
+			truth[liar] = false;
+		}
 		for (int i = 0; i < buttons.Length; i++)
 		{
-			ButtonColor color = (ButtonColor)Random.Range(0, NUM_COLORS);
-			buttons[i] = new Button(color, truth[i], COLUMNS[i % NUM_COLS] + "" + ROWS[i / NUM_COLS]);
+			ButtonColor color = (ButtonColor)idxPickedColors[i];
+			buttons[i] = new ButtonComplex(color, truth[i], isSafe[i], COLUMNS[i % NUM_COLS] + "" + ROWS[i / NUM_COLS]);
 		}
+		// Apply Doubt ruleset here.
+		var possibleBtnColors = buttons.Select(a => a.buttonColor).Distinct().ToArray();
+		foreach (var curBtnColor in possibleBtnColors)
+		{
+			var sharedbuttonIdxesClr = Enumerable.Range(0, totalButtons).Where(a => buttons[a].buttonColor == curBtnColor).ToArray();
+			if (sharedbuttonIdxesClr.Any(a => !buttons[a].isSafe))
+				foreach (var idx in sharedbuttonIdxesClr)
+					buttons[idx].isTruth ^= true;
+		}
+
 		return buttons;
 	}
 	
+	private void UpdateToggleScns()
+    {
+		for (var index = 0; index < toggleTextMeshes.Length; index++)
+			toggleTextMeshes[index].text = toggleCycleChars[toggleIndexes[index]].ToString();
+    }
+
 	private void pressedToggle(int index)
 	{
 		Audio.PlaySoundAtTransform(toggleSfx.name, toggleButtons[index].transform);
 		toggleIndexes[index] = (toggleIndexes[index] + 1) % toggleCycleChars.Length;
-		toggleTextMeshes[index].text = toggleCycleChars[toggleIndexes[index]] + "";
+		UpdateToggleScns();
 	}
 	private void pressedButton(int index)
 	{
 		buttonSelectables[index].AddInteractionPunch(0.2f);
 		Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, buttonSelectables[index].transform);
-		Debug.Log($"[Lying Buttons #{moduleId}]: Defuser pressed the {ROW_COORD[index / NUM_COLS]}{COL_COORD[index % NUM_COLS]} Button");
-		if (buttons[index].isTruth)
+		//Debug.Log($"[Doubted Lying Buttons #{moduleId}]: Defuser pressed the {ROW_COORD[index / NUM_COLS]}{COL_COORD[index % NUM_COLS]} Button");
+		if (buttons[index].isSafe)
 		{
 			buttonSelectables[index].OnInteract = null;
 			buttonSelectables[index].transform.localPosition = new Vector3(buttonSelectables[index].transform.localPosition.x, 0.014f, buttonSelectables[index].transform.localPosition.z);
 			numPressed++;
 			if(numPressed == (buttons.Length - numLiars))
 			{
+				Debug.Log($"[Doubted Lying Buttons #{moduleId}]: All safe buttons have been pressed.");
 				foreach (KMSelectable button in buttonSelectables)
 					button.OnInteract = null;
 				foreach (KMSelectable button in toggleButtons)
@@ -176,7 +211,7 @@ public class LyingButtons : MonoBehaviour {
 		}
 		else
 		{
-			Debug.Log($"[Lying Buttons #{moduleId}]: Strike! Regenerating Puzzle!");
+			Debug.Log($"[Doubted Lying Buttons #{moduleId}]: Strike! {ROW_COORD[index / NUM_COLS]}{COL_COORD[index % NUM_COLS]} was not safe! Regenerating Puzzle!");
 			foreach (KMSelectable button in buttonSelectables)
 				button.OnInteract = null;
 			foreach (KMSelectable button in toggleButtons)
@@ -209,6 +244,32 @@ public class LyingButtons : MonoBehaviour {
 		}
 		moduleTransform.transform.localScale = new Vector3(0f, 0f, 0f);
 		module.HandlePass();
+	}
+	void Update()
+	{
+		var possibleKeys = new[] {
+			new[] { KeyCode.Backspace, KeyCode.Delete }, // Blank
+			new[] { KeyCode.Keypad1, KeyCode.Alpha1 }, // 1
+			new[] { KeyCode.Keypad2, KeyCode.Alpha2 }, // 2
+			new[] { KeyCode.Keypad3, KeyCode.Alpha3 }, // 3
+			new[] { KeyCode.Keypad4, KeyCode.Alpha4 }, // 4
+			new[] { KeyCode.Keypad5, KeyCode.Alpha5 }, // 5
+			new[] { KeyCode.Keypad0, KeyCode.Alpha0, KeyCode.O }, // O
+			new[] { KeyCode.X }, // X
+			new[] { KeyCode.T, KeyCode.Question }, // ?
+		};
+		if (!focused) return;
+		var firstIdxPressed = Enumerable.Range(0, possibleKeys.Length).IndexOf(a => possibleKeys[a].Any(b => Input.GetKeyDown(b)));
+		if (firstIdxPressed != -1 && idxesHL.Any())
+        {
+			foreach (var idxHL in idxesHL)
+			{
+				toggleIndexes[idxHL] = firstIdxPressed;
+				Audio.PlaySoundAtTransform(toggleSfx.name, toggleButtons[idxHL].transform);
+			}
+			UpdateToggleScns();
+        }
+
 	}
 	private void HandleColorblindModeToggle(bool enableColorblind = false)
     {
@@ -245,9 +306,9 @@ public class LyingButtons : MonoBehaviour {
 	}
 
 #pragma warning disable 414
-	private readonly string TwitchHelpMessage = "\"!{0} (T)oggle [position] (12345OXB)\" will press the toggle button in the position until the desired text shows up, with \"B\" corresponding to blank. \"!{0} (P)ress [positions]\" will press the buttons listed in the positions you provided. The list of valid positions is as follows: TL/1 TM/2 TR/3 ML/4 MM/5 MR/6 BL/7 BM/8 BR/9.";
+	private readonly string TwitchHelpMessage = "\"!{0} (T)oggle [position] (12345OXB?)\" will press the toggle button in the position until the desired text shows up, with \"B\" corresponding to blank. \"!{0} (P)ress [positions]\" will press the buttons listed in the positions you provided. The list of valid positions is as follows: TL/1 TM/2 TR/3 ML/4 MM/5 MR/6 BL/7 BM/8 BR/9.";
 	readonly string[] allowedBtnPos = new[] { "TL", "TM", "TR", "ML", "MM", "MR", "BL", "BM", "BR", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
-	readonly string refValidNotesOrdered = "B12345OX";
+	readonly string refValidNotesOrdered = "B12345OX?";
 #pragma warning restore 414
 
 	IEnumerator ProcessTwitchCommand(string command)

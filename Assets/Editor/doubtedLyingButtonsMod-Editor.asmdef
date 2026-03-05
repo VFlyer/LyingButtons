@@ -1,7 +1,7 @@
 {
-  "name": "lyingButtons-Editor",
+  "name": "doubtedLyingButtonsMod-Editor",
   "references": [
-    "lyingButtons"
+    "doubtedLyingButtonsMod"
   ],
   "includePlatforms": [
     "Editor"

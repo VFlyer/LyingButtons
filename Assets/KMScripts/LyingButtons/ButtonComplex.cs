@@ -2,28 +2,31 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Button 
+public class ButtonComplex
 {
 	public ButtonColor buttonColor;
 	public bool isTruth;
+	public bool isSafe;
 	public ClueObj clue;
 	public string coord;
-	public Button(ButtonColor buttonColor, bool isTruth, string coord)
+	public ButtonComplex(ButtonColor buttonColor, bool isTruth, bool isSafe, string coord)
 	{
 		this.buttonColor = buttonColor;
 		this.isTruth = isTruth;
+		this.isSafe = isSafe;
 		this.coord = coord;
 	}
 
-	public virtual string toString()
+	public string toString()
 	{
 
-		string end = isTruth ? "Honest" : "Lying";
+		string endCond = isTruth ? "Honest" : "Lying";
+		string endState = isSafe ? "Safe" : "Not Safe";
 
 		string clueStr = ":";
 		if (clue != null)
 			clueStr = clue.toString;
-		return getRow(coord[1]) + "" + getCol(coord[0]) + " " + buttonColor + " " + clueStr + " (" + end + ")";
+		return $"{getRow(coord[1])}{getCol(coord[0])} {buttonColor} {clueStr} ({endCond}, {endState})";
 	}
 	private char getRow(char r)
 	{

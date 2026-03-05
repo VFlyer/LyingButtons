@@ -11,17 +11,8 @@ public class ClueObj
 		this.clue = clue;
 		this.code = code;
 	}
-	public string getCondition()
-	{
-		return clue;
-	}
-	public string getCode()
-	{
-		return code;
-	}
-	public string toString()
-	{
-		return code + ": " + clue;
-	}
+    public string Condition => clue;
+    public string Code => code;
+    public string toString => code + ": " + clue;
 
 }

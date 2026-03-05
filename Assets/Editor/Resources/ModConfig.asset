@@ -11,10 +11,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 615501dbe4f3fe94fbf4b564abb10237, type: 3}
   m_Name: ModConfig
   m_EditorClassIdentifier: 
-  id: lyingButtons
-  title: Lying Buttons
-  author: Sean
-  description: 
+  id: doubtedLyingButtonsMod
+  title: Doubted Lying Buttons
+  author: VFlyer, Sean
+  description: A variant of Lying Buttons originally made by Sean, with a gimmick
+    represeting that of the later Mimic Logic dungeons.
   version: 1.0
   outputFolder: build
   previewImage: {fileID: 2800000, guid: fd7495f2ed239924db4a836554db8ecc, type: 3}

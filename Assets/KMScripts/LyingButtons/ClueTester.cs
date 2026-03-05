@@ -6,9 +6,166 @@ using UnityEngine;
 public class ClueTester 
 {
 	
+	public bool testClue(ClueObj clue, ButtonComplex[] buttons)
+	{
+		string code = clue.Code;
+		switch(code.Substring(code.Length - 2))
+		{
+			case "EQ": return evalEqualClue(code, buttons);
+			case "GR": return evalGreaterClue(code, buttons);
+			case "LT": return evalLeastClue(code, buttons);
+			case "FR": return evalFewerClue(code, buttons);
+		}
+		return false;
+	}
+	private bool evalEqualClue(string code, ButtonComplex[] buttons)
+	{
+		ButtonComplex[] loc1 = getButtons(code.Substring(0, 2), buttons);
+		ButtonComplex[] loc2 = getButtons(code.Substring(5, 2), buttons);
+		int s1 = getAttributeCount(loc1, code.Substring(2, 3), buttons);
+		int s2;
+		if(isNum(code.Substring(7, 3)))
+			s2 = int.Parse(code.Substring(7, 3));
+		else
+			s2 = getAttributeCount(loc2, code.Substring(7, 3), buttons);
+		return s1 == s2;
+	}
+	private bool evalGreaterClue(string code, ButtonComplex[] buttons)
+	{
+		ButtonComplex[] loc1 = getButtons(code.Substring(0, 2), buttons);
+		ButtonComplex[] loc2 = getButtons(code.Substring(5, 2), buttons);
+		int s1 = getAttributeCount(loc1, code.Substring(2, 3), buttons);
+		int s2 = getAttributeCount(loc2, code.Substring(7, 3), buttons);
+		return s1 > s2;
+	}
+	private bool evalLeastClue(string code, ButtonComplex[] buttons)
+	{
+		ButtonComplex[] loc1 = getButtons(code.Substring(0, 2), buttons);
+		int s1 = getAttributeCount(loc1, code.Substring(2, 3), buttons);
+		int s2 = Int32.Parse(code.Substring(7, 3));
+		return s1 >= s2;
+	}
+	private bool evalFewerClue(string code, ButtonComplex[] buttons)
+	{
+		ButtonComplex[] loc1 = getButtons(code.Substring(0, 2), buttons);
+		int s1 = getAttributeCount(loc1, code.Substring(2, 3), buttons);
+		int s2 = Int32.Parse(code.Substring(7, 3));
+		return s1 <= s2;
+	}
+	private ButtonComplex[] getButtons(string locId, ButtonComplex[] buttons)
+	{
+		switch(locId)
+		{
+			case "GD": return buttons;
+			case "RA": return new ButtonComplex[] { buttons[0], buttons[1], buttons[2] };
+			case "RB": return new ButtonComplex[] { buttons[3], buttons[4], buttons[5] };
+			case "RC": return new ButtonComplex[] { buttons[6], buttons[7], buttons[8] };
+			case "CA": return new ButtonComplex[] { buttons[0], buttons[3], buttons[6] };
+			case "CB": return new ButtonComplex[] { buttons[1], buttons[4], buttons[7] };
+			case "CC": return new ButtonComplex[] { buttons[2], buttons[5], buttons[8] };
+			case "J1": return new ButtonComplex[] { buttons[1], buttons[3]};
+			case "J2": return new ButtonComplex[] { buttons[0], buttons[2], buttons[4] };
+			case "J3": return new ButtonComplex[] { buttons[1], buttons[5] };
+			case "J4": return new ButtonComplex[] { buttons[0], buttons[4], buttons[6] };
+			case "J5": return new ButtonComplex[] { buttons[1], buttons[3], buttons[5], buttons[7] };
+			case "J6": return new ButtonComplex[] { buttons[2], buttons[4], buttons[8] };
+			case "J7": return new ButtonComplex[] { buttons[3], buttons[7] };
+			case "J8": return new ButtonComplex[] { buttons[4], buttons[6], buttons[8] };
+			case "J9": return new ButtonComplex[] { buttons[5], buttons[7] };
+			case "A1": return new ButtonComplex[] { buttons[0] };
+			case "B1": return new ButtonComplex[] { buttons[1] };
+			case "C1": return new ButtonComplex[] { buttons[2] };
+			case "A2": return new ButtonComplex[] { buttons[3] };
+			case "B2": return new ButtonComplex[] { buttons[4] };
+			case "C2": return new ButtonComplex[] { buttons[5] };
+			case "A3": return new ButtonComplex[] { buttons[6] };
+			case "B3": return new ButtonComplex[] { buttons[7] };
+			case "C3": return new ButtonComplex[] { buttons[8] };
+		}
+		return null;
+	}
+	private int getAttributeCount(ButtonComplex[] loc, string attrID, ButtonComplex[] buttons)
+	{
+		int sum = 0;
+		HashSet<int> set = new HashSet<int>();
+		
+		switch(attrID)
+		{
+			case "LLL":
+				foreach(ButtonComplex button in loc)
+				{
+					if (!button.isSafe)
+						sum++;
+				}
+				break;
+			case "NRL":
+				foreach (ButtonComplex button in loc)
+				{
+					if (!button.isSafe && button.buttonColor == ButtonColor.RED)
+						sum++;
+				}
+				break;
+			case "NYL":
+				foreach (ButtonComplex button in loc)
+				{
+					if (!button.isSafe && button.buttonColor == ButtonColor.YELLOW)
+						sum++;
+				}
+				break;
+			case "NBL":
+				foreach (ButtonComplex button in loc)
+				{
+					if (!button.isSafe && button.buttonColor == ButtonColor.BLUE)
+						sum++;
+				}
+				break;
+			case "CDL":
+				foreach (ButtonComplex button in loc)
+				{
+					if (!button.isSafe)
+						set.Add((int)button.buttonColor);
+				}
+				sum = set.Count;
+				break;
+			case "DCL":
+				foreach (ButtonComplex button in loc)
+				{
+					if (!button.isSafe)
+						set.Add(button.coord[0]);
+				}
+				sum = set.Count;
+				break;
+			case "DRL":
+				foreach (ButtonComplex button in loc)
+				{
+					if (!button.isSafe)
+						set.Add(button.coord[1]);
+				}
+				sum = set.Count;
+				break;
+			case "AJL":
+				for(int i = 0; i < buttons.Length; i++)
+				{
+					if(!buttons[i].isSafe)
+					{
+						ButtonComplex[] newLoc = getButtons("J" + (i + 1), buttons);
+						foreach(ButtonComplex button in newLoc)
+						{
+							if(!button.isSafe)
+							{
+								sum++;
+								break;
+							}
+						}
+					}
+				}
+				break;
+		}
+		return sum;
+	}	
 	public bool testClue(ClueObj clue, Button[] buttons)
 	{
-		string code = clue.getCode();
+		string code = clue.Code;
 		switch(code.Substring(code.Length - 2))
 		{
 			case "EQ": return evalEqualClue(code, buttons);
