@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class PuzzleGenComplex
 {
+    static Dictionary<string, List<List<int>>> storedCombinations = new Dictionary<string, List<List<int>>>();
     private readonly int NUM_TOTAL_RETRIES = 1000;
     private List<ClueObj> allTrueClues = new List<ClueObj>(), allFalseClues = new List<ClueObj>();
     private ButtonComplex[] storedButtons;
@@ -94,7 +95,7 @@ public class PuzzleGenComplex
             clues.Add(new CEqual($"The number of rows that contains an unsafe button is exactly {i}", "GD", "DRL", i));
             clues.Add(new CEqual($"The number of columns that contains an unsafe button is exactly {i}", "GD", "DCL", i));
         }
-
+        if (possNumLiars.Count > 1)
         foreach(int i in possNumLiars)
             clues.Add(new CEqual($"There are exactly {i} unsafe buttons", "GD", "LLL", i));
         
@@ -108,8 +109,8 @@ public class PuzzleGenComplex
         locNames = new string[] { "top left", "top middle", "top right", "middle left", "center", "middle right", "bottom left", "bottom middle", "bottom right" };
         for (int i = 0; i < 9; i++)
         {
-            clues.Add(new CEqual($"The {locNames[i]} button is telling the truth", locIds[i], "LLL", 0));
-            clues.Add(new CEqual($"The {locNames[i]} button is lying", locIds[i], "LLL", 1));
+            clues.Add(new CEqual($"The {locNames[i]} button is safe", locIds[i], "LLL", 0));
+            clues.Add(new CEqual($"The {locNames[i]} button is not safe", locIds[i], "LLL", 1));
         }
 
         /*
@@ -227,18 +228,19 @@ public class PuzzleGenComplex
         ButtonComplex[] buttons = Copy(realButtons);
         var possibleBtnColors = buttons.Select(a => a.buttonColor).Distinct().ToArray();
         var buttonsTotal = realButtons.Length;
-        var possibleIdxUnsafePos = Enumerable.Range(0, 1 << buttonsTotal).Where(a => possNumLiars.Contains(count1s(a))).ToArray();
+        var possibleIdxUnsafePos = possNumLiars.SelectMany(a => CreateIdxCombinations(buttonsTotal, a)).ToList();
         int solCount = 0;
         for (var x = 0; x < possibleIdxUnsafePos.Count() && solCount < 2; x++)
         {
+            var curIdxLying = possibleIdxUnsafePos[x];
+            var arraySafeBtns = Enumerable.Range(0, buttonsTotal).Select(a => !curIdxLying.Contains(a)).ToArray();
+            for (var n = 0; n < buttonsTotal; n++)
+                buttons[n].isSafe = arraySafeBtns[n];
             // Reset this so that the conditions are followed later.
             foreach (var btn in buttons)
                 btn.isTruth = btn.isSafe;
             // Default rule: a button that is safe is telling the truth.
-            var curIdxLying = possibleIdxUnsafePos[x];
-            var arraySafeBtns = Enumerable.Range(0, buttonsTotal).Select(a => (curIdxLying >> a) % 2 == 0).ToArray();
-            for (var n = 0; n < buttonsTotal; n++)
-                buttons[n].isSafe = arraySafeBtns[n];
+            // Apply Doubt ruleset.
             foreach (var curBtnColor in possibleBtnColors)
             {
                 var sharedbuttonIdxesClr = Enumerable.Range(0, buttonsTotal).Where(a => buttons[a].buttonColor == curBtnColor).ToArray();
@@ -258,18 +260,18 @@ public class PuzzleGenComplex
         ButtonComplex[] buttons = Copy(storedButtons);
         var possibleBtnColors = buttons.Select(a => a.buttonColor).Distinct().ToArray();
         var buttonsTotal = storedButtons.Length;
-        var possibleIdxUnsafePos = Enumerable.Range(0, 1 << buttonsTotal).Where(a => possibleLiarsStored.Contains(count1s(a))).ToArray();
+        var possibleUnsafePos = possibleLiarsStored.SelectMany(a => CreateIdxCombinations(buttonsTotal, a)).ToList();
         var output = new List<bool[]>();
-        for (var x = 0; x < possibleIdxUnsafePos.Count(); x++)
+        for (var x = 0; x < possibleUnsafePos.Count(); x++)
         {
+            var curIdxLying = possibleUnsafePos[x];
+            var arraySafeBtns = Enumerable.Range(0, buttonsTotal).Select(a => !curIdxLying.Contains(a)).ToArray();
+            for (var n = 0; n < buttonsTotal; n++)
+                buttons[n].isSafe = arraySafeBtns[n];
             // Reset this so that the conditions are followed later.
             foreach (var btn in buttons)
                 btn.isTruth = btn.isSafe;
-            // Default rule: a button that is safe is telling the truth.
-            var curIdxLying = possibleIdxUnsafePos[x];
-            var arraySafeBtns = Enumerable.Range(0, buttonsTotal).Select(a => (curIdxLying >> a) % 2 == 0).ToArray();
-            for (var n = 0; n < buttonsTotal; n++)
-                buttons[n].isSafe = arraySafeBtns[n];
+            // Default rule: A button that is safe is telling the truth. A button that is not safe is not telling the truth.
             foreach (var curBtnColor in possibleBtnColors)
             {
                 var sharedbuttonIdxesClr = Enumerable.Range(0, buttonsTotal).Where(a => buttons[a].buttonColor == curBtnColor).ToArray();
@@ -283,16 +285,26 @@ public class PuzzleGenComplex
         }
         return output;
     }
-    private int count1s(int num)
+    private List<List<int>> CreateIdxCombinations(int itemCount, int pickCount = 0)
     {
-        var count = 0;
-        var lastNum = num;
-        while (lastNum > 0)
+        var searchString = string.Format("{0},{1}", itemCount, pickCount);
+        if (storedCombinations.ContainsKey(searchString))
+            return storedCombinations[searchString];
+        // Generate a set of combinations based on the amount of items.
+        var output = new List<List<int>> { new List<int>() }; // Start with an empty list, as that is N choose 0. Needed to iterate for later items.
+        for (var x = 0; x < pickCount; x++)
         {
-            count++;
-            lastNum &= lastNum - 1;
+            var nextOutput = new List<List<int>>();
+            foreach (var curList in output)
+            {
+                var possibleValues = Enumerable.Range(0, itemCount).Where(a => !(curList.Contains(a) || curList.Any() && a < curList.Max())).ToArray();
+                // Check if the value is not present in the list, AND if the list is not empty, the value is larger than the biggest value stored.
+                foreach (var value in possibleValues)
+                    nextOutput.Add(curList.Concat(new[] { value }).ToList());
+            }
+            output = nextOutput;
         }
-        return count;
+        return output;
     }
 
     private string getColorCode(ButtonColor color)

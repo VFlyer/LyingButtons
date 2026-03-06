@@ -42,45 +42,45 @@ public class ClueTester
 	{
 		ButtonComplex[] loc1 = getButtons(code.Substring(0, 2), buttons);
 		int s1 = getAttributeCount(loc1, code.Substring(2, 3), buttons);
-		int s2 = Int32.Parse(code.Substring(7, 3));
+		int s2 = int.Parse(code.Substring(7, 3));
 		return s1 >= s2;
 	}
 	private bool evalFewerClue(string code, ButtonComplex[] buttons)
 	{
 		ButtonComplex[] loc1 = getButtons(code.Substring(0, 2), buttons);
 		int s1 = getAttributeCount(loc1, code.Substring(2, 3), buttons);
-		int s2 = Int32.Parse(code.Substring(7, 3));
+		int s2 = int.Parse(code.Substring(7, 3));
 		return s1 <= s2;
 	}
 	private ButtonComplex[] getButtons(string locId, ButtonComplex[] buttons)
 	{
 		switch(locId)
 		{
-			case "GD": return buttons;
-			case "RA": return new ButtonComplex[] { buttons[0], buttons[1], buttons[2] };
-			case "RB": return new ButtonComplex[] { buttons[3], buttons[4], buttons[5] };
-			case "RC": return new ButtonComplex[] { buttons[6], buttons[7], buttons[8] };
-			case "CA": return new ButtonComplex[] { buttons[0], buttons[3], buttons[6] };
-			case "CB": return new ButtonComplex[] { buttons[1], buttons[4], buttons[7] };
-			case "CC": return new ButtonComplex[] { buttons[2], buttons[5], buttons[8] };
-			case "J1": return new ButtonComplex[] { buttons[1], buttons[3]};
-			case "J2": return new ButtonComplex[] { buttons[0], buttons[2], buttons[4] };
-			case "J3": return new ButtonComplex[] { buttons[1], buttons[5] };
-			case "J4": return new ButtonComplex[] { buttons[0], buttons[4], buttons[6] };
-			case "J5": return new ButtonComplex[] { buttons[1], buttons[3], buttons[5], buttons[7] };
-			case "J6": return new ButtonComplex[] { buttons[2], buttons[4], buttons[8] };
-			case "J7": return new ButtonComplex[] { buttons[3], buttons[7] };
-			case "J8": return new ButtonComplex[] { buttons[4], buttons[6], buttons[8] };
-			case "J9": return new ButtonComplex[] { buttons[5], buttons[7] };
-			case "A1": return new ButtonComplex[] { buttons[0] };
-			case "B1": return new ButtonComplex[] { buttons[1] };
-			case "C1": return new ButtonComplex[] { buttons[2] };
-			case "A2": return new ButtonComplex[] { buttons[3] };
-			case "B2": return new ButtonComplex[] { buttons[4] };
-			case "C2": return new ButtonComplex[] { buttons[5] };
-			case "A3": return new ButtonComplex[] { buttons[6] };
-			case "B3": return new ButtonComplex[] { buttons[7] };
-			case "C3": return new ButtonComplex[] { buttons[8] };
+			case "GD": return buttons; // All Buttons
+			case "RA": return new ButtonComplex[] { buttons[0], buttons[1], buttons[2] }; // Row 1
+			case "RB": return new ButtonComplex[] { buttons[3], buttons[4], buttons[5] }; // Row 2
+			case "RC": return new ButtonComplex[] { buttons[6], buttons[7], buttons[8] }; // Row 3
+			case "CA": return new ButtonComplex[] { buttons[0], buttons[3], buttons[6] }; // Col A
+			case "CB": return new ButtonComplex[] { buttons[1], buttons[4], buttons[7] }; // Col B
+			case "CC": return new ButtonComplex[] { buttons[2], buttons[5], buttons[8] }; // Col C
+			case "J1": return new ButtonComplex[] { buttons[1], buttons[3]}; // Buttons adjacent to TL
+			case "J2": return new ButtonComplex[] { buttons[0], buttons[2], buttons[4] }; // Buttons adjacent to TM
+			case "J3": return new ButtonComplex[] { buttons[1], buttons[5] }; // Buttons adjacent to TR
+			case "J4": return new ButtonComplex[] { buttons[0], buttons[4], buttons[6] }; // Buttons adjacent to ML
+			case "J5": return new ButtonComplex[] { buttons[1], buttons[3], buttons[5], buttons[7] }; // Buttons adjacent to MM
+			case "J6": return new ButtonComplex[] { buttons[2], buttons[4], buttons[8] }; // Buttons adjacent to MR
+			case "J7": return new ButtonComplex[] { buttons[3], buttons[7] }; // Buttons adjacent to BL
+			case "J8": return new ButtonComplex[] { buttons[4], buttons[6], buttons[8] }; // Buttons adjacent to BM
+			case "J9": return new ButtonComplex[] { buttons[5], buttons[7] }; // Buttons adjacent to BR
+			case "A1": return new ButtonComplex[] { buttons[0] }; // TL
+			case "B1": return new ButtonComplex[] { buttons[1] }; // TM
+			case "C1": return new ButtonComplex[] { buttons[2] }; // TR
+			case "A2": return new ButtonComplex[] { buttons[3] }; // ML
+			case "B2": return new ButtonComplex[] { buttons[4] }; // MM
+			case "C2": return new ButtonComplex[] { buttons[5] }; // MR
+			case "A3": return new ButtonComplex[] { buttons[6] }; // BL
+			case "B3": return new ButtonComplex[] { buttons[7] }; // BM
+			case "C3": return new ButtonComplex[] { buttons[8] }; // BR
 		}
 		return null;
 	}

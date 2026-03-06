@@ -133,6 +133,7 @@ public class DoubtLyingButtons : MonoBehaviour {
             buttonMeshes[i].material = buttonColors[btnColorIdx];
         }
 		var allPossibleSolutions = puzzleGenerator.GetAllPossiblePositions();
+		Debug.Log(allPossibleSolutions.Select(a => a.Select(b => b ? "!" : "X").Join("")).Join(","));
 		if (!puzzleGenerator.IsSolutionUnique)
 		{
 			// If for whatever reason the module generated an ambiguous puzzle, do this.
@@ -388,52 +389,12 @@ public class DoubtLyingButtons : MonoBehaviour {
 		else
 			yield return "sendtochat An error occurred because {0} inputted something wrong. Check the command again for any typos.";
 	}
-	/*
-	private int posToNum(string str)
-	{
-		switch(str)
-		{
-			case "TL":
-			case "1":
-				return 0;
-			case "TM":
-			case "2":
-				return 1;
-			case "TR":
-			case "3":
-				return 2;
-			case "ML":
-			case "4":
-				return 3;
-			case "MM":
-			case "5":
-				return 4;
-			case "MR":
-			case "6":
-				return 5;
-			case "BL":
-			case "7":
-				return 6;
-			case "BM":
-			case "8":
-				return 7;
-			case "BR":
-			case "9":
-				return 8;
-		}
-		return -1;
-	}
-	private bool isValidText(string str)
-	{
-        return str.Length == 1 ? toggleCycleChars.Contains(str) : false;
-    }
-	*/
     IEnumerator TwitchHandleForcedSolve()
 	{
 		yield return null;
 		for(int i = 0; i < buttons.Length; i++)
 		{
-			if(buttons[i].isTruth && buttonSelectables[i].OnInteract != null)
+			if(buttons[i].isSafe && buttonSelectables[i].OnInteract != null)
 			{
 				buttonSelectables[i].OnInteract();
 				yield return new WaitForSeconds(0.1f);
