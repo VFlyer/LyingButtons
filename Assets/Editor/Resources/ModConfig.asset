@@ -14,13 +14,24 @@ MonoBehaviour:
   id: doubtedLyingButtonsMod
   title: Doubted Lying Buttons
   author: VFlyer, Sean
-  description: 'A variant of Lying Buttons originally made by Sean, with a gimmick
-    represeting that of a puzzle later in the game.
+  description: 'A variant of Lying Buttons originally made by Sean Obach, with a gimmick
+    represeting that of a puzzle later in the game inspiring Lying Buttons.
 
+    It is recommended that you familize yourself with Lying Buttons first before attempting
+    this module, as some rules may differ.
 
     The original version can be found here: https://steamcommunity.com/sharedfiles/filedetails/?id=3220132988
 
-    This module is also based on the game Mimic Logic: https://store.steampowered.com/app/2455920/Mimic_Logic/'
+
+    Module ID: doubtedLyingButtons
+
+
+    This module is also based on the game Mimic Logic: https://store.steampowered.com/app/2455920/Mimic_Logic/
+
+
+    Source code: https://github.com/VFlyer/LyingButtons/tree/DeceptiveLying
+
+    TP Supported.'
   version: 1.0
   outputFolder: build
   previewImage: {fileID: 2800000, guid: 800c2915919401b43b02719cfa909795, type: 3}
