@@ -2,6 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using LyingBtnEnums;
+namespace LyingBtnEnums
+{
+    public enum PuzzleType {
+        Normal,
+        Doubt,
+        Confuse,
+    };
+}
 
 public class PuzzleGenComplex
 {
@@ -12,9 +21,12 @@ public class PuzzleGenComplex
     private int[] possibleLiarsStored;
     private bool solutionUnique = false;
     public bool IsSolutionUnique => solutionUnique;
-    public ButtonComplex[] generatePuzzle(ButtonComplex[] buttons, List<int> possNumLiars, int numColors)
+    public PuzzleType usedPuzzle;
+
+    public ButtonComplex[] GeneratePuzzle(ButtonComplex[] buttons, List<int> possNumLiars, int numColors, PuzzleType puzzle = PuzzleType.Normal)
     {
-        List<ClueObj> allPossibleClues = getAllPossibleClueIds(buttons, possNumLiars, numColors);
+        usedPuzzle = puzzle;
+        List<ClueObj> allPossibleClues = GetAllPossibleClueIds(buttons, possNumLiars, numColors);
         storedButtons = buttons;
         possibleLiarsStored = possNumLiars.ToArray();
         //Debug.LogFormat("Number of clues: {0}", allPossibleClues.Count);
@@ -34,9 +46,9 @@ public class PuzzleGenComplex
         foreach (ClueObj clue in allFalseClues)
             Debug.LogFormat("{0}", clue.toString);
         */
-        return getValidPuzzle(buttons, clueTester, possNumLiars, allTrueClues, allFalseClues);
+        return GetValidPuzzle(buttons, clueTester, possNumLiars, allTrueClues, allFalseClues);
     }
-	private List<ClueObj> getAllPossibleClueIds(ButtonComplex[] buttons, List<int> possNumLiars, int numColors)
+	private List<ClueObj> GetAllPossibleClueIds(ButtonComplex[] buttons, List<int> possNumLiars, int numColors)
     {
         possNumLiars.Sort();
         int maxLiars = possNumLiars[possNumLiars.Count - 1];
@@ -141,7 +153,7 @@ public class PuzzleGenComplex
                 for(int j = 0; j < numColors; j++)
                 {
                     if (i != j)
-                        colorClues.Add(new CGreater($"The {getColorName((ButtonColor)i)} buttons has more liars than the {getColorName((ButtonColor)j)} buttons", "GD", "N" + getColorCode((ButtonColor)i) + "L", "N" + getColorCode((ButtonColor)j) + "L"));
+                        colorClues.Add(new CGreater($"The {GetColorName((ButtonColor)i)} buttons has more liars than the {GetColorName((ButtonColor)j)} buttons", "GD", "N" + GetColorCode((ButtonColor)i) + "L", "N" + GetColorCode((ButtonColor)j) + "L"));
                 }
             }
         }
@@ -152,7 +164,7 @@ public class PuzzleGenComplex
                 for (int j = i + 1; j < numColors; j++)
                 {
                     if (colorSums[j] > 0)
-                        colorClues.Add(new CEqual($"The number of liars in the {getColorName((ButtonColor)i)} buttons are equal to the number of liars in the {getColorName((ButtonColor)j)} buttons", "GD", "N" + getColorCode((ButtonColor)i) + "L", "GD", "N" + getColorCode((ButtonColor)j) + "L"));
+                        colorClues.Add(new CEqual($"The number of liars in the {GetColorName((ButtonColor)i)} buttons are equal to the number of liars in the {GetColorName((ButtonColor)j)} buttons", "GD", "N" + GetColorCode((ButtonColor)i) + "L", "GD", "N" + GetColorCode((ButtonColor)j) + "L"));
                 }
             }
         }
@@ -161,15 +173,15 @@ public class PuzzleGenComplex
             if(colorSums[i] > 0)
             {
                 for(int j = 0; j <= colorSums[i] && j <= maxLiars; j++)
-                    colorClues.Add(new CEqual($"The {getColorName((ButtonColor)i)} buttons contains exactly {j} unsafe button(s)", "GD", "N" + getColorCode((ButtonColor)i) + "L", j));
+                    colorClues.Add(new CEqual($"The {GetColorName((ButtonColor)i)} buttons contains exactly {j} unsafe button(s)", "GD", "N" + GetColorCode((ButtonColor)i) + "L", j));
             }
         }
         for (int i = 0; i < numColors; i++)
         {
             for (int j = 1; j < colorSums[i] && j < maxLiars; j++)
             {
-                colorClues.Add(new CLeast($"The {getColorName((ButtonColor)i)} buttons contains at least {j} unsafe button(s)", "GD", "N" + getColorCode((ButtonColor)i) + "L", j));
-                colorClues.Add(new CFewer($"The {getColorName((ButtonColor)i)} buttons contains {j} or fewer unsafe buttons", "GD", "N" + getColorCode((ButtonColor)i) + "L", j));
+                colorClues.Add(new CLeast($"The {GetColorName((ButtonColor)i)} buttons contains at least {j} unsafe button(s)", "GD", "N" + GetColorCode((ButtonColor)i) + "L", j));
+                colorClues.Add(new CFewer($"The {GetColorName((ButtonColor)i)} buttons contains {j} or fewer unsafe buttons", "GD", "N" + GetColorCode((ButtonColor)i) + "L", j));
             }
         }
         List<ClueObj> trueColorClues = new List<ClueObj>(), falseColorClues = new List<ClueObj>();
@@ -202,9 +214,9 @@ public class PuzzleGenComplex
         
         return clues;
     }
-    private ButtonComplex[] getValidPuzzle(ButtonComplex[] buttons, ClueTester clueTester, List<int> possNumLiars, List<ClueObj> trueClues, List<ClueObj> falseClues)
+    private ButtonComplex[] GetValidPuzzle(ButtonComplex[] buttons, ClueTester clueTester, List<int> possNumLiars, List<ClueObj> trueClues, List<ClueObj> falseClues)
     {
-        for (int z = 0; z < NUM_TOTAL_RETRIES; z++)
+        for (int z = 0; z < NUM_TOTAL_RETRIES && !solutionUnique; z++)
         {
             for (int i = 0; i < buttons.Length; i++)
             {
@@ -213,15 +225,11 @@ public class PuzzleGenComplex
                 else
                     buttons[i].clue = falseClues.PickRandom();
             }
-            if (canSolve(realButtons: buttons, clueTester: clueTester, possNumLiars: possNumLiars))
-            {
-                solutionUnique = true;
-                break;
-            }
+            solutionUnique = CanSolveAny(realButtons: buttons, clueTester: clueTester, possNumLiars: possNumLiars);
         }
         return buttons;
     }
-    private bool canSolve(ButtonComplex[] realButtons, List<int> possNumLiars, ClueTester clueTester = null)
+    private bool CanSolveAny(ButtonComplex[] realButtons, List<int> possNumLiars, ClueTester clueTester = null)
     {
         if (clueTester == null)
             clueTester = new ClueTester();
@@ -240,28 +248,55 @@ public class PuzzleGenComplex
             foreach (var btn in buttons)
                 btn.isTruth = btn.isSafe;
             // Default rule: a button that is safe is telling the truth.
-            // Apply Doubt ruleset.
-            foreach (var curBtnColor in possibleBtnColors)
+            switch (usedPuzzle)
             {
-                var sharedbuttonIdxesClr = Enumerable.Range(0, buttonsTotal).Where(a => buttons[a].buttonColor == curBtnColor).ToArray();
-                if (sharedbuttonIdxesClr.Any(a => !buttons[a].isSafe))
-                    foreach (var idx in sharedbuttonIdxesClr)
-                        buttons[idx].isTruth ^= true;
+                case PuzzleType.Confuse: // Apply Confuse ruleset.
+                    { // Throw a random confused button and check for each safe button's case.
+                        foreach (var idx in Enumerable.Range(0, buttons.Length).Where(a => buttons[a].isSafe).ToArray())
+                        {
+                            var copiedButtons = Copy(buttons);
+                            copiedButtons[idx].isTruth = false;
+                            var solutionValid = buttons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth);
+                            if (solutionValid)
+                                solCount++;
+                        }
+                    }
+                    break;
+                case PuzzleType.Doubt: // Apply Doubt ruleset.
+                    { // Unsafe buttons tell the truth, but safe buttons that are the same color as an unsafe button lies.
+                        foreach (var curBtnColor in possibleBtnColors)
+                        {
+                            var sharedbuttonIdxesClr = Enumerable.Range(0, buttonsTotal).Where(a => buttons[a].buttonColor == curBtnColor).ToArray();
+                            if (sharedbuttonIdxesClr.Any(a => !buttons[a].isSafe))
+                                foreach (var idx in sharedbuttonIdxesClr)
+                                    buttons[idx].isTruth ^= true;
+                        }
+                        var solutionValid = buttons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth);
+                        if (solutionValid)
+                            solCount++;
+                    }
+                    break;
+                default: // Normal Lying Buttons ruleset.
+                    {
+                        var solutionValid = buttons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth);
+                        if (solutionValid)
+                            solCount++;
+                    }
+                    break;
             }
-            var solutionValid = buttons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth);
-            if (solutionValid)
-                solCount++;
+            
+
         }
         return solCount == 1;
     }
-    public List<bool[]> GetAllPossiblePositions()
+    public List<ButtonComplex[]> GetAllPossiblePositions()
     {
         var clueTester = new ClueTester();
         ButtonComplex[] buttons = Copy(storedButtons);
         var possibleBtnColors = buttons.Select(a => a.buttonColor).Distinct().ToArray();
         var buttonsTotal = storedButtons.Length;
         var possibleUnsafePos = possibleLiarsStored.SelectMany(a => CreateIdxCombinations(buttonsTotal, a)).ToList();
-        var output = new List<bool[]>();
+        var output = new List<ButtonComplex[]>();
         for (var x = 0; x < possibleUnsafePos.Count(); x++)
         {
             var curIdxLying = possibleUnsafePos[x];
@@ -272,16 +307,44 @@ public class PuzzleGenComplex
             foreach (var btn in buttons)
                 btn.isTruth = btn.isSafe;
             // Default rule: A button that is safe is telling the truth. A button that is not safe is not telling the truth.
-            foreach (var curBtnColor in possibleBtnColors)
+            switch (usedPuzzle)
             {
-                var sharedbuttonIdxesClr = Enumerable.Range(0, buttonsTotal).Where(a => buttons[a].buttonColor == curBtnColor).ToArray();
-                if (sharedbuttonIdxesClr.Any(a => !buttons[a].isSafe))
-                    foreach (var idx in sharedbuttonIdxesClr)
-                        buttons[idx].isTruth ^= true;
+                default:
+                    {
+                        var solutionValid = buttons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth);
+                        if (solutionValid)
+                            output.Add(Copy(buttons));
+                    }
+                    break;
+                case PuzzleType.Doubt:
+                    {
+                        foreach (var curBtnColor in possibleBtnColors)
+                        {
+                            var sharedbuttonIdxesClr = Enumerable.Range(0, buttonsTotal).Where(a => buttons[a].buttonColor == curBtnColor).ToArray();
+                            if (sharedbuttonIdxesClr.Any(a => !buttons[a].isSafe))
+                                foreach (var idx in sharedbuttonIdxesClr)
+                                    buttons[idx].isTruth ^= true;
+                        }
+                        var solutionValid = buttons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth);
+                        if (solutionValid)
+                            output.Add(Copy(buttons));
+                    }
+                    break;
+                case PuzzleType.Confuse:
+                    {
+                        foreach (var idx in Enumerable.Range(0, buttons.Length).Where(a => buttons[a].isSafe).ToArray())
+                        {
+                            var copiedButtons = Copy(buttons);
+                            copiedButtons[idx].isTruth = false;
+                            var solutionValid = buttons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth);
+                            if (solutionValid)
+                                output.Add(Copy(copiedButtons));
+                        }
+                    }
+                    break;
             }
-            var solutionValid = buttons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth);
-            if (solutionValid)
-                output.Add(arraySafeBtns);
+            
+
         }
         return output;
     }
@@ -304,10 +367,11 @@ public class PuzzleGenComplex
             }
             output = nextOutput;
         }
+        storedCombinations.Add(searchString, output.ToList());
         return output;
     }
 
-    private string getColorCode(ButtonColor color)
+    private string GetColorCode(ButtonColor color)
     {
         switch(color)
         {
@@ -320,7 +384,7 @@ public class PuzzleGenComplex
         }
         return null;
     }
-    private string getColorName(ButtonColor color)
+    private string GetColorName(ButtonColor color)
     {
         switch (color)
         {

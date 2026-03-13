@@ -51,7 +51,7 @@ public class AssetBundler
     /// <summary>
     /// Folders which should not be included in the asset bundling process.
     /// </summary>
-    public static string[] EXCLUDED_FOLDERS = new string[] { "Assets/Editor", "Assets/TestHarness" };
+    public static string[] EXCLUDED_FOLDERS = new string[] { "Assets/Editor", "Assets/TestHarness", "Assets/Lying Buttons" };
 
 
     #region Internal bundler Variables

@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using LyingBtnEnums;
 
-public class DoubtLyingButtons : MonoBehaviour {
+public class ConfuseLyingButtons : MonoBehaviour {
 
 	public KMBombModule module;
 	public KMAudio Audio;
@@ -34,7 +34,7 @@ public class DoubtLyingButtons : MonoBehaviour {
 	private int NUM_ROWS = 3;
 	private int NUM_COLS = 3;
 	private int MIN_UNSAFE = 2;
-	private int MAX_UNSAFE = 3;
+	private int MAX_UNSAFE = 2;
 	private int MIN_CHOICE = 1;
 	private int MAX_CHOICE = 1;
 	private int NUM_COLORS = 3;
@@ -58,7 +58,7 @@ public class DoubtLyingButtons : MonoBehaviour {
 	private int numPressed;
 	private int[] toggleIndexes;
 	private readonly string toggleCycleChars = " 12345OX?";
-	bool[] safeButtonsAmbiguousPuzzle;
+	bool[] safeButtonsAmbiguousPuzzle = null;
 	bool[] buttonsPressed;
 
 	private ButtonComplex[] buttons;
@@ -85,9 +85,10 @@ public class DoubtLyingButtons : MonoBehaviour {
 		//Debug.LogFormat("{0}", clueMatDict.Count);
 		toggleIndexes = new int[toggleTextMeshes.Length];
 		generatePossNumLiars();
-		Debug.Log($"[Doubted Lying Buttons #{moduleId}]: {string.Join(" ", possNumLiars.Select(x => x.ToString()).ToArray())} unsafe buttons have been selected.");
+		Debug.Log($"[Confused Lying Buttons #{moduleId}]: Any amount of these unsafe buttons are selected as clues: {string.Join(" ", possNumLiars.Select(x => x.ToString()).ToArray())}");
 		for(int i = 0; i < clamps.Length; i++)
 			clamps[i].enabled = possNumLiars.Contains(i + 1);
+		clamps.Last().enabled = true;
 		buttons = generatePuzzle();
 		HandleColorblindModeToggle(requireColorblind);
 		mainSelectable.OnFocus += delegate { focused = true; };
@@ -115,19 +116,18 @@ public class DoubtLyingButtons : MonoBehaviour {
 		ButtonComplex[] buttons = GenerateButtons();
 		var puzzleGenerator = new PuzzleGenComplex();
 		var buttonCount = buttons.Length;
-		buttons = puzzleGenerator.GeneratePuzzle(buttons, possNumLiars, NUM_COLORS, PuzzleType.Doubt);
+		buttons = puzzleGenerator.GeneratePuzzle(buttons, possNumLiars, NUM_COLORS, PuzzleType.Confuse);
 		buttonsPressed = new bool[buttonCount];
 		while (buttons == null)
 		{
 			buttons = GenerateButtons();
 			puzzleGenerator = new PuzzleGenComplex();
-			buttons = puzzleGenerator.GeneratePuzzle(buttons, possNumLiars, NUM_COLORS, PuzzleType.Doubt);
+			buttons = puzzleGenerator.GeneratePuzzle(buttons, possNumLiars, NUM_COLORS, PuzzleType.Confuse);
 			if (!puzzleGenerator.IsSolutionUnique) continue;
 		}
-		clamps.Last().enabled = !puzzleGenerator.IsSolutionUnique;
         for (int i = 0; i < buttonCount; i++)
         {
-            Debug.Log($"[Doubted Lying Buttons #{moduleId}]: {buttons[i].toString()}");
+            Debug.Log($"[Confused Lying Buttons #{moduleId}]: {buttons[i].toString()}");
             screens[i].material = clueMatDict[buttons[i].clue.Code];
             var btnColorIdx = (int)buttons[i].buttonColor;
             buttonMeshes[i].material = buttonColors[btnColorIdx];
@@ -138,11 +138,11 @@ public class DoubtLyingButtons : MonoBehaviour {
 		if (!puzzleGenerator.IsSolutionUnique)
 		{
 			// If for whatever reason the module generated an ambiguous puzzle, do this.
-			Debug.Log($"[Doubted Lying Buttons #{moduleId}]: Watch out! The module has generated an ambiguous case!");
+			Debug.Log($"[Confused Lying Buttons #{moduleId}]: Watch out! The module has generated an ambiguous case!");
 			safeButtonsAmbiguousPuzzle = new bool[buttonCount];
 			for (var x = 0; x < buttons.Length; x++)
 				safeButtonsAmbiguousPuzzle[x] = allPossibleSolutions.All(combo => combo[x]);
-			Debug.Log($"[Doubted Lying Buttons #{moduleId}]: Certainly safe buttons: {Enumerable.Range(0, buttonCount).Where(a => safeButtonsAmbiguousPuzzle[a]).Select(a => string.Format("{0}{1}", ROW_COORD[a / 3], COL_COORD[a % 3])).Join(", ")}");
+			Debug.Log($"[Confused Lying Buttons #{moduleId}]: Certainly safe buttons: {Enumerable.Range(0, buttonCount).Where(a => safeButtonsAmbiguousPuzzle[a]).Select(a => string.Format("{0}{1}", ROW_COORD[a / 3], COL_COORD[a % 3])).Join(", ")}");
 		}
 		else
 			safeButtonsAmbiguousPuzzle = null;
@@ -181,15 +181,9 @@ public class DoubtLyingButtons : MonoBehaviour {
 			ButtonColor color = (ButtonColor)idxPickedColors[i];
 			buttons[i] = new ButtonComplex(color, truth[i], isSafe[i], COLUMNS[i % NUM_COLS] + "" + ROWS[i / NUM_COLS]);
 		}
-		// Apply Doubt ruleset here.
-		var possibleBtnColors = buttons.Select(a => a.buttonColor).Distinct().ToArray();
-		foreach (var curBtnColor in possibleBtnColors)
-		{
-			var sharedbuttonIdxesClr = Enumerable.Range(0, totalButtons).Where(a => buttons[a].buttonColor == curBtnColor).ToArray();
-			if (sharedbuttonIdxesClr.Any(a => !buttons[a].isSafe))
-				foreach (var idx in sharedbuttonIdxesClr)
-					buttons[idx].isTruth ^= true;
-		}
+		// Apply Confuse ruleset.
+		var pickedIdxSafeBtn = Enumerable.Range(0, totalButtons).Where(a => buttons[a].isSafe).PickRandom();
+		buttons[pickedIdxSafeBtn].isTruth = false;
 
 		return buttons;
 	}
@@ -219,7 +213,7 @@ public class DoubtLyingButtons : MonoBehaviour {
 			numPressed++;
 			if(numPressed == (buttons.Length - numLiars))
 			{
-				Debug.Log($"[Doubted Lying Buttons #{moduleId}]: All safe buttons have been pressed.");
+				Debug.Log($"[Confused Lying Buttons #{moduleId}]: All safe buttons have been pressed.");
 				foreach (KMSelectable button in buttonSelectables)
 					button.OnInteract = null;
 				foreach (KMSelectable button in toggleButtons)
@@ -229,7 +223,7 @@ public class DoubtLyingButtons : MonoBehaviour {
 		}
 		else if (safeButtonsAmbiguousPuzzle == null)
 		{
-			Debug.Log($"[Doubted Lying Buttons #{moduleId}]: Strike! {ROW_COORD[index / NUM_COLS]}{COL_COORD[index % NUM_COLS]} was not safe! Regenerating Puzzle!");
+			Debug.Log($"[Confused Lying Buttons #{moduleId}]: Strike! {ROW_COORD[index / NUM_COLS]}{COL_COORD[index % NUM_COLS]} was not safe! Regenerating Puzzle!");
 			foreach (KMSelectable button in buttonSelectables)
 				button.OnInteract = null;
 			foreach (KMSelectable button in toggleButtons)
@@ -251,12 +245,31 @@ public class DoubtLyingButtons : MonoBehaviour {
 			var idxesCertainlySafe = Enumerable.Range(0, buttons.Length).Where(a => safeButtonsAmbiguousPuzzle[a]);
 			if (idxesCertainlySafe.All(a => buttonsPressed[a]))
             {
-				Debug.Log($"[Doubted Lying Buttons #{moduleId}]: Normally the module would strike. But since you pressed all buttons that are certainly safe, and the module generated an ambiguous puzzle, the module will solve in response.");
+				Debug.Log($"[Confused Lying Buttons #{moduleId}]: Normally the module would strike. But since you pressed all buttons that are certainly safe, and the module generated an ambiguous puzzle, the module will solve in response.");
 				foreach (KMSelectable button in buttonSelectables)
 					button.OnInteract = null;
 				foreach (KMSelectable button in toggleButtons)
 					button.OnInteract = null;
 				StartCoroutine(solveAnimation());
+			}
+			else
+            {
+				Debug.Log($"[Confused Lying Buttons #{moduleId}]: Strike! {ROW_COORD[index / NUM_COLS]}{COL_COORD[index % NUM_COLS]} was not safe! At least 1 certainly safe button was also not pressed! Regenerating Puzzle!");
+				foreach (KMSelectable button in buttonSelectables)
+					button.OnInteract = null;
+				foreach (KMSelectable button in toggleButtons)
+					button.OnInteract = null;
+				numPressed = 0;
+				foreach (MeshRenderer buttonMesh in buttonMeshes)
+					buttonMesh.transform.localPosition = new Vector3(buttonMesh.transform.localPosition.x, 0.0159f, buttonMesh.transform.localPosition.z);
+				for (int i = 0; i < toggleIndexes.Length; i++)
+				{
+					toggleIndexes[i] = 0;
+					toggleTextMeshes[i].text = toggleCycleChars[toggleIndexes[i]] + "";
+				}
+				module.HandleStrike();
+				buttons = generatePuzzle();
+				HandleColorblindModeToggle(requireColorblind);
 			}
         }
 	}
