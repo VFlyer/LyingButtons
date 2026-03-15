@@ -9,6 +9,7 @@ namespace LyingBtnEnums
         Normal,
         Doubt,
         Confuse,
+        Quizzer
     };
 }
 
@@ -153,7 +154,7 @@ public class PuzzleGenComplex
                 for(int j = 0; j < numColors; j++)
                 {
                     if (i != j)
-                        colorClues.Add(new CGreater($"The {GetColorName((ButtonColor)i)} buttons has more liars than the {GetColorName((ButtonColor)j)} buttons", "GD", "N" + GetColorCode((ButtonColor)i) + "L", "N" + GetColorCode((ButtonColor)j) + "L"));
+                        colorClues.Add(new CGreater($"There are more {GetColorName((ButtonColor)i)} unsafe buttons than {GetColorName((ButtonColor)j)} unsafe buttons", "GD", "N" + GetColorCode((ButtonColor)i) + "L", "N" + GetColorCode((ButtonColor)j) + "L"));
                 }
             }
         }
@@ -164,7 +165,7 @@ public class PuzzleGenComplex
                 for (int j = i + 1; j < numColors; j++)
                 {
                     if (colorSums[j] > 0)
-                        colorClues.Add(new CEqual($"The number of liars in the {GetColorName((ButtonColor)i)} buttons are equal to the number of liars in the {GetColorName((ButtonColor)j)} buttons", "GD", "N" + GetColorCode((ButtonColor)i) + "L", "GD", "N" + GetColorCode((ButtonColor)j) + "L"));
+                        colorClues.Add(new CEqual($"The number of {GetColorName((ButtonColor)i)} unsafe buttons are equal to the number of {GetColorName((ButtonColor)j)} unsafe buttons", "GD", "N" + GetColorCode((ButtonColor)i) + "L", "GD", "N" + GetColorCode((ButtonColor)j) + "L"));
                 }
             }
         }
@@ -250,13 +251,20 @@ public class PuzzleGenComplex
             // Default rule: a button that is safe is telling the truth.
             switch (usedPuzzle)
             {
-                case PuzzleType.Confuse: // Apply Confuse ruleset.
-                    { // Throw a random confused button and check for each safe button's case.
-                        foreach (var idx in Enumerable.Range(0, buttons.Length).Where(a => buttons[a].isSafe).ToArray())
+                case PuzzleType.Quizzer:
+                case PuzzleType.Confuse: // Apply Confuse/Quizzer ruleset.
+                    {
+                        // Use below condition if the puzzle is a Quizzer ruleset.
+                        if (usedPuzzle == PuzzleType.Quizzer && buttons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth))
+                            solCount++;
+                        // Throw a random confused button and check for each safe button's case.
+                        int[] curComboSafeBtns = Enumerable.Range(0, buttons.Length).Where(a => buttons[a].isSafe).ToArray();
+                        for (int i = 0; i < curComboSafeBtns.Length && solCount < 2; i++)
                         {
+                            int idx = curComboSafeBtns[i];
                             var copiedButtons = Copy(buttons);
                             copiedButtons[idx].isTruth = false;
-                            var solutionValid = buttons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth);
+                            var solutionValid = copiedButtons.All(btnClue => clueTester.testClue(btnClue.clue, buttons) == btnClue.isTruth);
                             if (solutionValid)
                                 solCount++;
                         }

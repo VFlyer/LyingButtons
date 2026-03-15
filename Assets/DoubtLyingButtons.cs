@@ -33,10 +33,6 @@ public class DoubtLyingButtons : MonoBehaviour {
 
 	private int NUM_ROWS = 3;
 	private int NUM_COLS = 3;
-	private int MIN_UNSAFE = 2;
-	private int MAX_UNSAFE = 3;
-	private int MIN_CHOICE = 1;
-	private int MAX_CHOICE = 1;
 	private int NUM_COLORS = 3;
 
 	const string COLUMNS = "ABC";
@@ -47,8 +43,8 @@ public class DoubtLyingButtons : MonoBehaviour {
 	[SerializeField]
 	private string CBColors = "RYB";
 
-	private int numLiars;
-	private List<int> possNumLiars;
+	private int numUnsafeBtns;
+	private List<int> possNumUnsafeBtns;
 
 	bool requireColorblind = false;
 	bool solving = false;
@@ -85,9 +81,9 @@ public class DoubtLyingButtons : MonoBehaviour {
 		//Debug.LogFormat("{0}", clueMatDict.Count);
 		toggleIndexes = new int[toggleTextMeshes.Length];
 		generatePossNumLiars();
-		Debug.Log($"[Doubted Lying Buttons #{moduleId}]: {string.Join(" ", possNumLiars.Select(x => x.ToString()).ToArray())} unsafe buttons have been selected.");
+		Debug.Log($"[Doubted Lying Buttons #{moduleId}]: Clues will generate with respect to this many unsafe buttons: {string.Join(" ", possNumUnsafeBtns.Select(x => x.ToString()).ToArray())}");
 		for(int i = 0; i < clamps.Length; i++)
-			clamps[i].enabled = possNumLiars.Contains(i + 1);
+			clamps[i].enabled = possNumUnsafeBtns.Contains(i + 1);
 		buttons = generatePuzzle();
 		HandleColorblindModeToggle(requireColorblind);
 		mainSelectable.OnFocus += delegate { focused = true; };
@@ -95,34 +91,26 @@ public class DoubtLyingButtons : MonoBehaviour {
 	}
 	private void generatePossNumLiars()
 	{
-		possNumLiars = new List<int>();
-		for (int i = MIN_UNSAFE; i <= MAX_UNSAFE; i++)
-			possNumLiars.Add(i);
-		int numChoices = Random.Range(0, MAX_CHOICE - MIN_CHOICE + 1) + MIN_CHOICE;
-		possNumLiars = possNumLiars.Shuffle();
-		while (possNumLiars.Count > numChoices)
-			possNumLiars.RemoveAt(0);
-		/*
-		possNumLiars.Clear();
-		possNumLiars.Add(2);
-		possNumLiars.Add(3);
-		possNumLiars.Add(4);
-		*/
-		possNumLiars.Sort();
+		possNumUnsafeBtns = new List<int>();
+		var allowedPosNumUnsafeBtns = new[] {
+			new[] { 2 }, new[] { 2 }, new[] { 2 }, new[] { 2 }, new[] { 2 },
+			new[] { 3 }, new[] { 3 }, new[] { 3 }, new[] { 3 }, new[] { 3 },
+			new[] { 1, 2 }, new[] { 2, 3 }, new[] { 1, 2, 3 } };
+		possNumUnsafeBtns.AddRange(allowedPosNumUnsafeBtns.PickRandom());
+		possNumUnsafeBtns.Sort();
 	}
 	private ButtonComplex[] generatePuzzle()
 	{
 		ButtonComplex[] buttons = GenerateButtons();
 		var puzzleGenerator = new PuzzleGenComplex();
 		var buttonCount = buttons.Length;
-		buttons = puzzleGenerator.GeneratePuzzle(buttons, possNumLiars, NUM_COLORS, PuzzleType.Doubt);
+		buttons = puzzleGenerator.GeneratePuzzle(buttons, possNumUnsafeBtns, NUM_COLORS, PuzzleType.Doubt);
 		buttonsPressed = new bool[buttonCount];
-		while (buttons == null)
+		while (!puzzleGenerator.IsSolutionUnique)
 		{
 			buttons = GenerateButtons();
 			puzzleGenerator = new PuzzleGenComplex();
-			buttons = puzzleGenerator.GeneratePuzzle(buttons, possNumLiars, NUM_COLORS, PuzzleType.Doubt);
-			if (!puzzleGenerator.IsSolutionUnique) continue;
+			buttons = puzzleGenerator.GeneratePuzzle(buttons, possNumUnsafeBtns, NUM_COLORS, PuzzleType.Doubt);
 		}
 		clamps.Last().enabled = !puzzleGenerator.IsSolutionUnique;
         for (int i = 0; i < buttonCount; i++)
@@ -165,9 +153,9 @@ public class DoubtLyingButtons : MonoBehaviour {
 	{
 		var totalButtons = NUM_ROWS * NUM_COLS;
 		ButtonComplex[] buttons = new ButtonComplex[totalButtons];
-		numLiars = possNumLiars.PickRandom();
-		//numLiars = 1;
-		var liars = Enumerable.Range(0, totalButtons).ToArray().Shuffle().Take(numLiars).ToArray();
+		numUnsafeBtns = possNumUnsafeBtns.PickRandom();
+		//numUnsafeBtns = 1;
+		var liars = Enumerable.Range(0, totalButtons).ToArray().Shuffle().Take(numUnsafeBtns).ToArray();
 		bool[] truth = Enumerable.Repeat(true, totalButtons).ToArray();
 		bool[] isSafe = Enumerable.Repeat(true, totalButtons).ToArray();
 		int[] idxPickedColors = Enumerable.Range(0, totalButtons).Select(a => Random.Range(0, NUM_COLORS)).ToArray();
@@ -217,7 +205,7 @@ public class DoubtLyingButtons : MonoBehaviour {
 			buttonSelectables[index].OnInteract = null;
 			buttonSelectables[index].transform.localPosition = new Vector3(buttonSelectables[index].transform.localPosition.x, 0.014f, buttonSelectables[index].transform.localPosition.z);
 			numPressed++;
-			if(numPressed == (buttons.Length - numLiars))
+			if(numPressed == (buttons.Length - numUnsafeBtns))
 			{
 				Debug.Log($"[Doubted Lying Buttons #{moduleId}]: All safe buttons have been pressed.");
 				foreach (KMSelectable button in buttonSelectables)

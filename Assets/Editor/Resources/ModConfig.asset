@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Name: ModConfig
   m_EditorClassIdentifier: 
   id: doubtedLyingButtonsMod
-  title: Doubted Lying Buttons
+  title: Doubted/Confused Lying Buttons
   author: VFlyer, Sean
   description: 'A variant of Lying Buttons originally made by Sean Obach, with a gimmick
     represeting that of a puzzle later in the game inspiring Lying Buttons.
@@ -23,7 +23,7 @@ MonoBehaviour:
     The original version can be found here: https://steamcommunity.com/sharedfiles/filedetails/?id=3220132988
 
 
-    Module ID: doubtedLyingButtons
+    Module IDs: doubtedLyingButtons, confusedLyingButtons
 
 
     This module is also based on the game Mimic Logic: https://store.steampowered.com/app/2455920/Mimic_Logic/
