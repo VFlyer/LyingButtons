@@ -84,7 +84,7 @@ public class DoubtLyingButtons : MonoBehaviour {
 		Debug.Log($"[Doubted Lying Buttons #{moduleId}]: Clues will generate with respect to this many unsafe buttons: {string.Join(" ", possNumUnsafeBtns.Select(x => x.ToString()).ToArray())}");
 		for(int i = 0; i < clamps.Length; i++)
 			clamps[i].enabled = possNumUnsafeBtns.Contains(i + 1);
-		buttons = generatePuzzle();
+		buttons = GeneratePuzzle();
 		HandleColorblindModeToggle(requireColorblind);
 		mainSelectable.OnFocus += delegate { focused = true; };
 		mainSelectable.OnDefocus += delegate { focused = false; };
@@ -99,18 +99,20 @@ public class DoubtLyingButtons : MonoBehaviour {
 		possNumUnsafeBtns.AddRange(allowedPosNumUnsafeBtns.PickRandom());
 		possNumUnsafeBtns.Sort();
 	}
-	private ButtonComplex[] generatePuzzle()
+	private ButtonComplex[] GeneratePuzzle()
 	{
 		ButtonComplex[] buttons = GenerateButtons();
 		var puzzleGenerator = new PuzzleGenComplex();
 		var buttonCount = buttons.Length;
 		buttons = puzzleGenerator.GeneratePuzzle(buttons, possNumUnsafeBtns, NUM_COLORS, PuzzleType.Doubt);
 		buttonsPressed = new bool[buttonCount];
-		while (!puzzleGenerator.IsSolutionUnique)
+		var attemptsLeft = 5;
+		while (!puzzleGenerator.IsSolutionUnique && attemptsLeft > 5)
 		{
 			buttons = GenerateButtons();
 			puzzleGenerator = new PuzzleGenComplex();
 			buttons = puzzleGenerator.GeneratePuzzle(buttons, possNumUnsafeBtns, NUM_COLORS, PuzzleType.Doubt);
+			attemptsLeft--;
 		}
 		clamps.Last().enabled = !puzzleGenerator.IsSolutionUnique;
         for (int i = 0; i < buttonCount; i++)
@@ -120,21 +122,21 @@ public class DoubtLyingButtons : MonoBehaviour {
             var btnColorIdx = (int)buttons[i].buttonColor;
             buttonMeshes[i].material = buttonColors[btnColorIdx];
         }
-		// Commented out since might as well force the loop to continue if the solution is not unique.
-		/*var allPossibleSolutions = puzzleGenerator.GetAllPossiblePositionsDoubt();
-		Debug.Log(allPossibleSolutions.Select(a => a.Select(b => b ? "!" : "X").Join("")).Join(","));
+		
+		var allPossibleSolutions = puzzleGenerator.GetAllPossiblePositions();
+		Debug.Log(allPossibleSolutions.Select(a => a.Select(b => b.isSafe ? "!" : "X").Join("")).Join(","));
 		if (!puzzleGenerator.IsSolutionUnique)
 		{
 			// If for whatever reason the module generated an ambiguous puzzle, do this.
 			Debug.Log($"[Doubted Lying Buttons #{moduleId}]: Watch out! The module has generated an ambiguous case!");
 			safeButtonsAmbiguousPuzzle = new bool[buttonCount];
 			for (var x = 0; x < buttons.Length; x++)
-				safeButtonsAmbiguousPuzzle[x] = allPossibleSolutions.All(combo => combo[x]);
+				safeButtonsAmbiguousPuzzle[x] = allPossibleSolutions.All(combo => combo[x].isSafe);
 			Debug.Log($"[Doubted Lying Buttons #{moduleId}]: Certainly safe buttons: {Enumerable.Range(0, buttonCount).Where(a => safeButtonsAmbiguousPuzzle[a]).Select(a => string.Format("{0}{1}", ROW_COORD[a / 3], COL_COORD[a % 3])).Join(", ")}");
 		}
 		else
 			safeButtonsAmbiguousPuzzle = null;
-		*/
+		
 		int[] indexes = new int[toggleIndexes.Length];
 		for (int i = 0; i < indexes.Length; i++)
 			indexes[i] = i;
@@ -212,7 +214,7 @@ public class DoubtLyingButtons : MonoBehaviour {
 					button.OnInteract = null;
 				foreach (KMSelectable button in toggleButtons)
 					button.OnInteract = null;
-				StartCoroutine(solveAnimation());
+				StartCoroutine(SolveAnimation());
 			}
 		}
 		else if (safeButtonsAmbiguousPuzzle == null)
@@ -231,7 +233,7 @@ public class DoubtLyingButtons : MonoBehaviour {
 				toggleTextMeshes[i].text = toggleCycleChars[toggleIndexes[i]] + "";
 			}
 			module.HandleStrike();
-			buttons = generatePuzzle();
+			buttons = GeneratePuzzle();
 			HandleColorblindModeToggle(requireColorblind);
 		}
 		else
@@ -244,11 +246,11 @@ public class DoubtLyingButtons : MonoBehaviour {
 					button.OnInteract = null;
 				foreach (KMSelectable button in toggleButtons)
 					button.OnInteract = null;
-				StartCoroutine(solveAnimation());
+				StartCoroutine(SolveAnimation());
 			}
         }
 	}
-	private IEnumerator solveAnimation()
+	private IEnumerator SolveAnimation()
 	{
 		solving = true;
 		yield return new WaitForSeconds(0.0f);
