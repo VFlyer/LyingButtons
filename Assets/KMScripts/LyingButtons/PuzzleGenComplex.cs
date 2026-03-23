@@ -31,7 +31,7 @@ public class PuzzleGenComplex
         storedButtons = buttons;
         possibleLiarsStored = possNumLiars.ToArray();
         //Debug.LogFormat("Number of clues: {0}", allPossibleClues.Count);
-        ClueTester clueTester = new ClueTester();
+        ClueTesterComplex clueTester = new ClueTesterComplex();
         foreach (ClueObj clue in allPossibleClues)
         {
             if (clueTester.testClue(clue, buttons))
@@ -59,7 +59,7 @@ public class PuzzleGenComplex
 
         // Generate clues based on the amount of unsafe buttons on each 
         List<ClueObj> locClues = new List<ClueObj>();
-        ClueTester clueTester = new ClueTester();
+        ClueTesterComplex clueTester = new ClueTesterComplex();
         for (int i = 0; i <= maxLiars && i <= 3; i++)
         {
             for(int j = 0; j < locIds.Length; j++)
@@ -215,7 +215,7 @@ public class PuzzleGenComplex
         
         return clues;
     }
-    private ButtonComplex[] GetValidPuzzle(ButtonComplex[] buttons, ClueTester clueTester, List<int> possNumLiars, List<ClueObj> trueClues, List<ClueObj> falseClues)
+    private ButtonComplex[] GetValidPuzzle(ButtonComplex[] buttons, ClueTesterComplex clueTester, List<int> possNumLiars, List<ClueObj> trueClues, List<ClueObj> falseClues)
     {
         for (int z = 0; z < NUM_TOTAL_RETRIES && !solutionUnique; z++)
         {
@@ -230,10 +230,10 @@ public class PuzzleGenComplex
         }
         return buttons;
     }
-    private bool CanSolveAny(ButtonComplex[] realButtons, List<int> possNumLiars, ClueTester clueTester = null)
+    private bool CanSolveAny(ButtonComplex[] realButtons, List<int> possNumLiars, ClueTesterComplex clueTester = null)
     {
         if (clueTester == null)
-            clueTester = new ClueTester();
+            clueTester = new ClueTesterComplex();
         ButtonComplex[] buttons = Copy(realButtons);
         var possibleBtnColors = buttons.Select(a => a.buttonColor).Distinct().ToArray();
         var buttonsTotal = realButtons.Length;
@@ -299,7 +299,7 @@ public class PuzzleGenComplex
     }
     public List<ButtonComplex[]> GetAllPossiblePositions()
     {
-        var clueTester = new ClueTester();
+        var clueTester = new ClueTesterComplex();
         ButtonComplex[] buttons = Copy(storedButtons);
         var possibleBtnColors = buttons.Select(a => a.buttonColor).Distinct().ToArray();
         var buttonsTotal = storedButtons.Length;

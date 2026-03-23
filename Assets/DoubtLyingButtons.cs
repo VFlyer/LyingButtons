@@ -352,7 +352,7 @@ public class DoubtLyingButtons : MonoBehaviour {
 			yield return null;
             for (var x = 0; x < pressCmdVal.Count(); x++)
             {
-				var curIdxPressCmd = allowedBtnPos.IndexOf(a => a == pressCmdVal[x]);
+				var curIdxPressCmd = allowedBtnPos.IndexOf(a => a == pressCmdVal[x]) % buttonSelectables.Length;
 				buttonSelectables[curIdxPressCmd].OnInteract();
 				yield return "trywaitcancel 0.1 Button interactions have been canceled!";
 				if (solving)

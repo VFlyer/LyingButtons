@@ -33,10 +33,6 @@ public class ConfuseLyingButtons : MonoBehaviour {
 
 	private int NUM_ROWS = 3;
 	private int NUM_COLS = 3;
-	private int MIN_UNSAFE = 2;
-	private int MAX_UNSAFE = 2;
-	private int MIN_CHOICE = 1;
-	private int MAX_CHOICE = 1;
 	private int NUM_COLORS = 3;
 
 	const string COLUMNS = "ABC";
@@ -393,7 +389,7 @@ public class ConfuseLyingButtons : MonoBehaviour {
 			yield return null;
             for (var x = 0; x < pressCmdVal.Count(); x++)
             {
-				var curIdxPressCmd = allowedBtnPos.IndexOf(a => a == pressCmdVal[x]);
+				var curIdxPressCmd = allowedBtnPos.IndexOf(a => a == pressCmdVal[x]) % buttonSelectables.Length;
 				buttonSelectables[curIdxPressCmd].OnInteract();
 				yield return "trywaitcancel 0.1 Button interactions have been canceled!";
 				if (solving)
