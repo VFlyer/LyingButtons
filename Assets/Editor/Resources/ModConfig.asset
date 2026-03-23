@@ -32,6 +32,6 @@ MonoBehaviour:
     Source code: https://github.com/VFlyer/LyingButtons/tree/DeceptiveLying
 
     TP Supported.'
-  version: 1.0.2
+  version: 1.0.3
   outputFolder: build
   previewImage: {fileID: 2800000, guid: 800c2915919401b43b02719cfa909795, type: 3}
