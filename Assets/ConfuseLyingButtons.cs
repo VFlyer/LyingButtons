@@ -98,8 +98,12 @@ public class ConfuseLyingButtons : MonoBehaviour {
 					break;
             }
 		}
-		
+		Debug.Log($"[Confused Lying Buttons #{moduleId}]: Clues will generate with respect to this many unsafe buttons: {string.Join(" ", possNumUnsafeBtns.Select(x => x.ToString()).ToArray())}");
+		//Debug.Log($"[Confused Lying Buttons #{moduleId}]: {numUnsafeBtns} unsafe buttons have been selected for this puzzle.");
+		if (puzzleGenerated == PuzzleType.Quizzer)
+			Debug.Log($"[Confused Lying Buttons #{moduleId}]: There may/may not be a confused button in this puzzle.");
 		buttons = GeneratePuzzle();
+
 		HandleColorblindModeToggle(requireColorblind);
 		mainSelectable.OnFocus += delegate { focused = true; };
 		mainSelectable.OnDefocus += delegate { focused = false; };
@@ -135,10 +139,6 @@ public class ConfuseLyingButtons : MonoBehaviour {
 			puzzleGenerator = new PuzzleGenComplex();
 			buttons = puzzleGenerator.GeneratePuzzle(buttons, possNumUnsafeBtns, NUM_COLORS, PuzzleType.Confuse);
 		}
-		Debug.Log($"[Confused Lying Buttons #{moduleId}]: Clues will generate with respect to this many unsafe buttons: {string.Join(" ", possNumUnsafeBtns.Select(x => x.ToString()).ToArray())}");
-		Debug.Log($"[Confused Lying Buttons #{moduleId}]: {numUnsafeBtns} unsafe buttons have been selected for this puzzle.");
-		if (puzzleGenerated == PuzzleType.Quizzer)
-			Debug.Log($"[Confused Lying Buttons #{moduleId}]: There may/may not be a confused button in this puzzle.");
 		for (int i = 0; i < buttonCount; i++)
         {
             Debug.Log($"[Confused Lying Buttons #{moduleId}]: {buttons[i].toString()}");
