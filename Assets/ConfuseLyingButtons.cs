@@ -222,7 +222,7 @@ public class ConfuseLyingButtons : MonoBehaviour {
 		if (buttons[index].isSafe)
 		{
 			buttonsPressed[index] = true;
-			buttonSelectables[index].OnInteract = null;
+			buttonSelectables[index].OnInteract = delegate { return false; };
 			buttonSelectables[index].transform.localPosition = new Vector3(buttonSelectables[index].transform.localPosition.x, 0.014f, buttonSelectables[index].transform.localPosition.z);
 			numPressed++;
 			if(numPressed == (buttons.Length - numUnsafeBtns))
